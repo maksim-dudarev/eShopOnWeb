@@ -1,17 +1,23 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Azure.ServiceBus;
+using Microsoft.eShopWeb.ApplicationCore;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.eShopWeb.Web.Interfaces;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Microsoft.eShopWeb.Web.Pages.Basket
@@ -25,18 +31,24 @@ namespace Microsoft.eShopWeb.Web.Pages.Basket
         private string _username = null;
         private readonly IBasketViewModelService _basketViewModelService;
         private readonly IAppLogger<CheckoutModel> _logger;
+        private readonly IHttpClientFactory _clientFactory;
+        private AppSettings AppSettings { get; set; }
 
         public CheckoutModel(IBasketService basketService,
             IBasketViewModelService basketViewModelService,
             SignInManager<ApplicationUser> signInManager,
             IOrderService orderService,
-            IAppLogger<CheckoutModel> logger)
+            IAppLogger<CheckoutModel> logger,
+            IHttpClientFactory clientFactory,
+            IOptions<AppSettings> settings)
         {
             _basketService = basketService;
             _signInManager = signInManager;
             _orderService = orderService;
             _basketViewModelService = basketViewModelService;
             _logger = logger;
+            _clientFactory = clientFactory;
+            AppSettings = settings.Value;
         }
 
         public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
@@ -59,8 +71,24 @@ namespace Microsoft.eShopWeb.Web.Pages.Basket
 
                 var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
                 await _basketService.SetQuantities(BasketModel.Id, updateModel);
-                await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
-                await _basketService.DeleteBasketAsync(BasketModel.Id);               
+                var order = await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+                await _basketService.DeleteBasketAsync(BasketModel.Id);
+
+                var deliveryUrl = AppSettings.DeliveryOrderProcessorUrl;
+                var client = _clientFactory.CreateClient();
+                var content = new StringContent(
+                    JsonSerializer.Serialize(order),
+                    Encoding.UTF8, "application/json");
+
+                using var deliveryResponse = await client.PostAsync(deliveryUrl, content);
+
+                string ServiceBusConnectionString = AppSettings.ServiceBusConnectionString;
+                IQueueClient queueClient = new QueueClient(ServiceBusConnectionString, AppSettings.QueueName);
+
+                var message = new Message(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(order)));
+                await queueClient.SendAsync(message);
+
+                await queueClient.CloseAsync();
             }
             catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
             {

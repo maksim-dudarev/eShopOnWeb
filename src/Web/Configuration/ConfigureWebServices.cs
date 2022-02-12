@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.eShopWeb.ApplicationCore;
 using Microsoft.eShopWeb.Web.Interfaces;
 using Microsoft.eShopWeb.Web.Services;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +16,7 @@ namespace Microsoft.eShopWeb.Web.Configuration
             services.AddScoped<CatalogViewModelService>();
             services.AddScoped<ICatalogItemViewModelService, CatalogItemViewModelService>();
             services.Configure<CatalogSettings>(configuration);
+            services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
             services.AddScoped<ICatalogViewModelService, CachedCatalogViewModelService>();
 
             return services;

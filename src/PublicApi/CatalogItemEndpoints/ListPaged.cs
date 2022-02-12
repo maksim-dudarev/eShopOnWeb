@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.ApplicationCore.Specifications;
+using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,14 +21,20 @@ namespace Microsoft.eShopWeb.PublicApi.CatalogItemEndpoints
         private readonly IAsyncRepository<CatalogItem> _itemRepository;
         private readonly IUriComposer _uriComposer;
         private readonly IMapper _mapper;
+        private readonly ILogger<ListPaged> _logger;
+        private readonly IAppLogger<ListPaged> _appLogger;
 
         public ListPaged(IAsyncRepository<CatalogItem> itemRepository,
             IUriComposer uriComposer,
-            IMapper mapper)
+            IMapper mapper, 
+            ILogger<ListPaged> logger,
+            IAppLogger<ListPaged> appLogger)
         {
             _itemRepository = itemRepository;
             _uriComposer = uriComposer;
             _mapper = mapper;
+            _logger = logger;
+            _appLogger = appLogger;
         }
 
         [HttpGet("api/catalog-items")]
@@ -57,6 +65,11 @@ namespace Microsoft.eShopWeb.PublicApi.CatalogItemEndpoints
                 item.PictureUri = _uriComposer.ComposePicUri(item.PictureUri);
             }
             response.PageCount = int.Parse(Math.Ceiling((decimal)totalItems / request.PageSize).ToString());
+
+            Trace.Listeners.Add(new ConsoleTraceListener());
+            Trace.TraceInformation("Items count (trace): " + response.CatalogItems.Count);
+            _logger.LogInformation("Items count (logger): " + response.CatalogItems.Count);
+            _appLogger.LogInformation("Items count (appLogger): " + response.CatalogItems.Count);
 
             return Ok(response);
         }

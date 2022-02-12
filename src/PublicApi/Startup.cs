@@ -38,10 +38,10 @@ namespace Microsoft.eShopWeb.PublicApi
         public void ConfigureDevelopmentServices(IServiceCollection services)
         {
             // use in-memory database
-            ConfigureInMemoryDatabases(services);
+            //ConfigureInMemoryDatabases(services);
 
             // use real database
-            //ConfigureProductionServices(services);
+            ConfigureProductionServices(services);
         }
 
         public void ConfigureDockerServices(IServiceCollection services)
@@ -122,7 +122,8 @@ namespace Microsoft.eShopWeb.PublicApi
                 options.AddPolicy(name: CORS_POLICY,
                                   builder =>
                                   {
-                                      builder.WithOrigins(baseUrlConfig.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'));
+                                      builder.WithOrigins(baseUrlConfig.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'),
+                                          baseUrlConfig.WebBaseAlter.Replace("host.docker.internal", "localhost").TrimEnd('/'));
                                       builder.AllowAnyMethod();
                                       builder.AllowAnyHeader();
                                   });
@@ -167,6 +168,7 @@ namespace Microsoft.eShopWeb.PublicApi
                     }
                 });
             });
+            services.AddApplicationInsightsTelemetry(Configuration["APPINSIGHTS_CONNECTIONSTRING"]);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=eshoponweb;AccountKey=5ksUKo/s8oTsCaMW5++yHx6TBGTnnLyg2qR9NVmA4B0viIMfbqBirHyOxx4ZsRnDBWKTfgygHfylyvbuliZNsg==;BlobEndpoint=https://eshoponweb.blob.core.windows.net/;TableEndpoint=https://eshoponweb.table.core.windows.net/;QueueEndpoint=https://eshoponweb.queue.core.windows.net/;FileEndpoint=https://eshoponweb.file.core.windows.net/",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "ServiceBusConnectionString": "Endpoint=sb://eshoponwebbus.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=gwjQEKMErT0lPv0Iq3MW9eP8OS9eiMpcq3ZzOFqNB6A="
+  },
+  "Host": {
+    "LocalHttpPort": 7072
+  }
+}
